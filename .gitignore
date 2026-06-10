@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# 기밀 파일 제외
+.env
+
+# 생성된 임시 미디어 파일 제외
+_tts_*.mp3
+gongik_shorts_output.mp4
