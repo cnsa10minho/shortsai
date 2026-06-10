@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실시간 크롤링 공익 숏폼 자동 제작 허브</title>
+<style>
+  :root {
+    --sky:#00A3FF; --sky-light:#E6F4FF; --sky-mid:#B3DEFF; --sky-dark:#0082CC; --sky-pale:#F0F9FF;
+    --white:#FFFFFF; --gray-50:#F8FAFC; --gray-100:#F1F5F9; --gray-200:#E2E8F0;
+    --gray-300:#CBD5E1; --gray-400:#94A3B8; --gray-500:#64748B; --gray-600:#475569;
+    --gray-800:#1E293B; --green:#10B981; --red:#EF4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif;}
+  body{background:var(--gray-50);color:var(--gray-800);display:flex;height:100vh;overflow:hidden;}
+
+  /* ── 사이드바 ─────────────────────────────── */
+  .sidebar{width:240px;background:var(--white);border-right:1px solid var(--gray-200);padding:24px 12px;display:flex;flex-direction:column;gap:8px;}
+  .logo{font-weight:800;font-size:17px;color:var(--sky);text-decoration:none;display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+  .nav-item{display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:8px;color:var(--sky-dark);background:var(--sky-light);font-weight:600;font-size:13px;text-decoration:none;}
+
+  /* ── 메인 ──────────────────────────────────── */
+  .main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+  .header{height:64px;background:var(--white);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;padding:0 28px;gap:12px;}
+  .header-title{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .content-body{flex:1;padding:20px;display:flex;gap:20px;overflow:hidden;}
+
+  /* ── 왼쪽 패널 ─────────────────────────────── */
+  .panel-left{width:420px;display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .card{background:var(--white);border:1px solid var(--gray-200);border-radius:12px;padding:16px;flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+  .search-row{display:flex;gap:8px;margin-bottom:10px;}
+  .search-input{flex:1;padding:9px 13px;border-radius:8px;border:1px solid var(--gray-200);font-size:13px;outline:none;transition:border 0.2s;}
+  .search-input:focus{border-color:var(--sky);}
+  .reload-btn{padding:9px 14px;border-radius:8px;border:1px solid var(--gray-200);background:var(--white);font-size:13px;cursor:pointer;transition:background 0.2s;}
+  .reload-btn:hover{background:var(--sky-light);}
+
+  .filter-bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+  .filter-btn{padding:5px 11px;border-radius:20px;border:1px solid var(--gray-200);background:var(--white);font-size:12px;cursor:pointer;color:var(--gray-600);transition:all 0.15s;}
+  .filter-btn.active{background:var(--sky);color:var(--white);border-color:var(--sky);font-weight:700;}
+
+  .notice-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px;}
+  .notice-list::-webkit-scrollbar{width:4px;}
+  .notice-list::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:4px;}
+
+  .notice-card{border:1px solid var(--gray-100);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all 0.18s;}
+  .notice-card:hover{border-color:var(--sky-mid);background:var(--sky-pale);}
+  .notice-card.active{border-color:var(--sky);background:var(--sky-pale);box-shadow:0 0 0 2px rgba(0,163,255,0.15);}
+  .notice-cat{font-size:10px;font-weight:700;color:var(--sky-dark);margin-bottom:4px;}
+  .notice-title{font-size:13px;font-weight:600;line-height:1.45;color:var(--gray-800);}
+  .notice-date{font-size:11px;color:var(--gray-400);margin-top:4px;}
+
+  .btn-create{width:100%;background:var(--sky);color:var(--white);border:none;padding:15px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,163,255,0.25);transition:all 0.2s;}
+  .btn-create:hover:not(:disabled){background:var(--sky-dark);box-shadow:0 6px 18px rgba(0,163,255,0.35);}
+  .btn-create:disabled{background:var(--gray-300);cursor:not-allowed;box-shadow:none;}
+
+  /* ── 오른쪽 패널 ───────────────────────────── */
+  .panel-right{flex:1;display:flex;flex-direction:column;background:var(--white);border:1px solid var(--gray-200);border-radius:12px;padding:20px;min-width:0;}
+  .panel-right-header{font-weight:700;margin-bottom:14px;font-size:14px;color:var(--gray-600);}
+  .preview-row{display:flex;gap:20px;flex:1;overflow:hidden;}
+
+  .preview-zone{flex:1;background:var(--gray-100);border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+  .preview-placeholder{color:var(--gray-400);text-align:center;font-size:12px;line-height:1.8;padding:24px;}
+  #video-wrapper{width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+
+  /* 로딩 오버레이 */
+  .overlay{position:absolute;inset:0;background:rgba(10,15,30,0.94);border-radius:12px;display:none;flex-direction:column;align-items:center;justify-content:center;color:var(--white);text-align:center;padding:28px;z-index:10;}
+  .overlay.show{display:flex;}
+  .spinner{width:52px;height:52px;border:4px solid rgba(0,163,255,0.3);border-top-color:var(--sky);border-radius:50%;animation:spin 0.9s linear infinite;margin-bottom:20px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .overlay-step{font-size:13px;color:var(--sky-mid);margin-top:8px;}
+
+  /* 진행 단계 표시 */
+  .progress-steps{display:flex;gap:6px;margin-bottom:20px;}
+  .step{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(0,163,255,0.1);color:var(--sky-mid);}
+  .step.active{background:var(--sky);color:var(--white);}
+  .step.done{background:#22c55e;color:var(--white);}
+
+  /* 다운로드 사이드 */
+  .archive-zone{width:260px;display:flex;flex-direction:column;gap:12px;}
+  .archive-title{font-size:13px;font-weight:700;color:var(--gray-600);}
+  .archive-empty{color:var(--gray-400);font-size:12px;line-height:1.7;}
+  .archive-card{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;}
+  .archive-card-title{font-size:12px;font-weight:600;line-height:1.4;color:var(--gray-800);}
+  .download-btn{display:block;text-align:center;padding:10px;background:var(--green);color:var(--white);font-size:12px;font-weight:700;text-decoration:none;border-radius:6px;transition:background 0.2s;}
+  .download-btn:hover{background:#059669;}
+
+  /* 상태 배지 */
+  .status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+  .status-badge.success{background:#dcfce7;color:#166534;}
+  .status-badge.error{background:#fee2e2;color:#991b1b;}
+
+  /* 토스트 */
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--gray-800);color:var(--white);padding:11px 22px;border-radius:28px;font-size:13px;opacity:0;transition:opacity 0.3s;z-index:200;white-space:nowrap;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- 사이드바 -->
+<div class="sidebar">
+  <a href="#" class="logo">🌐 공익 숏폼 허브</a>
+  <a href="#" class="nav-item">🏠 센터 홈페이지 연동</a>
+  <a href="#" class="nav-item" style="background:transparent;color:var(--gray-500);">📊 제작 기록</a>
+  <a href="#" class="nav-item" style="background:transparent;color:var(--gray-500);">⚙️ 설정</a>
+</div>
+
+<!-- 메인 -->
+<div class="main-content">
+  <div class="header">
+    <div class="live-dot"></div>
+    <span class="header-title">LIVE: 경기도공익활동지원센터 공지사항 실시간 연동 숏폼 허브</span>
+  </div>
+
+  <div class="content-body">
+
+    <!-- 왼쪽: 공지 목록 -->
+    <div class="panel-left">
+      <div class="card">
+        <div class="search-row">
+          <input type="text" class="search-input" id="search-keyword"
+                 placeholder="🔍 공지 검색..." oninput="filterNotices()">
+          <button class="reload-btn" onclick="loadRealTimeNotices()" title="새로고침">🔄</button>
+        </div>
+        <div class="filter-bar">
+          <button class="filter-btn active" id="btn-all"    onclick="setCategory('전체')">전체</button>
+          <button class="filter-btn"        id="btn-gongmo" onclick="setCategory('공모')">공모·모집</button>
+          <button class="filter-btn"        id="btn-haengsa" onclick="setCategory('행사안내')">행사·교육</button>
+          <button class="filter-btn"        id="btn-gongji" onclick="setCategory('일반공지')">일반공지</button>
+        </div>
+        <div class="notice-list" id="notice-container">
+          <div style="text-align:center;color:var(--gray-400);font-size:12px;padding:40px 0;">
+            🌐 공지사항을 불러오는 중...
+          </div>
+        </div>
+      </div>
+      <button class="btn-create" id="btn-submit" onclick="startEncoding()" disabled>
+        🎬 선택한 공지로 숏폼 제작
+      </button>
+    </div>
+
+    <!-- 오른쪽: 영상 미리보기 + 다운로드 -->
+    <div class="panel-right">
+      <div class="panel-right-header">🎬 비디오 인코딩 모니터</div>
+
+      <div class="preview-row">
+        <!-- 영상 미리보기 영역 -->
+        <div class="preview-zone" id="preview-zone">
+          <div class="overlay" id="loader">
+            <div class="progress-steps" id="progress-steps">
+              <div class="step" id="step1">1. 대본 생성</div>
+              <div class="step" id="step2">2. 이미지 생성</div>
+              <div class="step" id="step3">3. 영상 합성</div>
+            </div>
+            <div class="spinner"></div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:6px;">AI 숏폼 제작 중...</div>
+            <div class="overlay-step" id="overlay-msg">대본 및 배경 이미지 생성 중입니다. 잠시 기다려 주세요.</div>
+          </div>
+          <div id="video-wrapper">
+            <div class="preview-placeholder">
+              공지를 선택하고 제작 버튼을 누르면<br>완성된 숏폼 영상이 여기에 표시됩니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- 다운로드 사이드 -->
+        <div class="archive-zone">
+          <div class="archive-title">📥 다운로드 센터</div>
+          <div class="archive-empty" id="archive-content">
+            영상 제작이 완료되면<br>다운로드 링크가 생성됩니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 상태 ─────────────────────────────────────────────────────────────────
+let ALL_NOTICES   = [];
+let currentCat    = '전체';
+let selectedId    = null;
+let isEncoding    = false;
+
+const API_BASE    = 'http://localhost:5000';
+
+// ── 공지 로드 ─────────────────────────────────────────────────────────────
+async function loadRealTimeNotices() {
+  const container = document.getElementById('notice-container');
+  container.innerHTML = '<div style="text-align:center;color:var(--gray-400);font-size:12px;padding:40px 0;">🌐 공지사항을 불러오는 중...</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/get-real-notices?pages=10`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    ALL_NOTICES = await res.json();
+    renderList(ALL_NOTICES);
+
+    const src = ALL_NOTICES.some(n => n.url && n.url.includes('gggongik'))
+      ? '실시간 크롤링 성공 🎉' : '백업 데이터 로드 완료';
+    showToast(`🌐 ${src} — ${ALL_NOTICES.length}건`);
+  } catch(e) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:32px 12px;">
+        <div style="font-size:28px;margin-bottom:8px;">⚠️</div>
+        <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:6px;">서버 연결 실패</div>
+        <div style="font-size:12px;color:var(--gray-500);">app.py 서버(포트 5000)가 실행 중인지 확인하세요.<br><code>python app.py</code></div>
+      </div>`;
+    showToast('❌ 서버에 연결할 수 없습니다.');
+  }
+}
+
+// ── 목록 렌더링 ───────────────────────────────────────────────────────────
+function renderList(data) {
+  const container = document.getElementById('notice-container');
+  if (!data.length) {
+    container.innerHTML = '<div style="color:var(--gray-400);font-size:12px;text-align:center;padding:30px 0;">조건에 맞는 공지가 없습니다.</div>';
+    return;
+  }
+  container.innerHTML = '';
+  data.forEach(n => {
+    const card = document.createElement('div');
+    card.className = `notice-card ${selectedId === n.id ? 'active' : ''}`;
+    card.dataset.id = n.id;
+    card.onclick = () => selectNotice(n.id);
+    card.innerHTML = `
+      <div class="notice-cat">[${n.cat}]</div>
+      <div class="notice-title">${escHtml(n.title)}</div>
+      ${n.deadline ? `<div class="notice-date">📅 ${escHtml(n.deadline)}</div>` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function selectNotice(id) {
+  selectedId = id;
+  document.querySelectorAll('.notice-card').forEach(c => {
+    c.classList.toggle('active', Number(c.dataset.id) === id);
+  });
+  document.getElementById('btn-submit').removeAttribute('disabled');
+}
+
+// ── 필터 ─────────────────────────────────────────────────────────────────
+function filterNotices() {
+  const kw = document.getElementById('search-keyword').value.trim().toLowerCase();
+  let filtered = ALL_NOTICES;
+  if (currentCat !== '전체') filtered = filtered.filter(n => n.cat === currentCat);
+  if (kw) filtered = filtered.filter(n => n.title.toLowerCase().includes(kw));
+  renderList(filtered);
+}
+
+function setCategory(cat) {
+  currentCat = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  const map = {'전체':'btn-all','공모':'btn-gongmo','행사안내':'btn-haengsa','일반공지':'btn-gongji'};
+  if (map[cat]) document.getElementById(map[cat]).classList.add('active');
+  filterNotices();
+}
+
+// ── 진행 단계 표시 ─────────────────────────────────────────────────────────
+function setStep(num) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById(`step${i}`);
+    if (i < num)  { el.className = 'step done'; }
+    else if (i === num) { el.className = 'step active'; }
+    else { el.className = 'step'; }
+  });
+  const msgs = {
+    1: '🤖 Gemini AI로 대본 및 이미지 프롬프트 생성 중...',
+    2: '🎨 Imagen 3으로 배경 이미지 생성 중... (10~20초 소요)',
+    3: '🎬 TTS 더빙 결합 및 영상 인코딩 중...',
+  };
+  document.getElementById('overlay-msg').textContent = msgs[num] || '';
+}
+
+// ── 숏폼 인코딩 시작 ──────────────────────────────────────────────────────
+async function startEncoding() {
+  if (!selectedId || isEncoding) return;
+  const notice = ALL_NOTICES.find(n => n.id === selectedId);
+  if (!notice) return;
+
+  isEncoding = true;
+  document.getElementById('btn-submit').disabled = true;
+
+  // 로딩 오버레이 표시
+  document.getElementById('loader').classList.add('show');
+  setStep(1);
+
+  // 단계 시뮬레이션 (실제 진행은 서버에서)
+  const stepTimer = setTimeout(() => setStep(2), 4000);
+  const stepTimer2 = setTimeout(() => setStep(3), 12000);
+
+  try {
+    const response = await fetch(`${API_BASE}/api/generate-shorts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title:    notice.title,
+        category: notice.cat,
+        body:     notice.body,
+        deadline: notice.deadline,
+        limit:    notice.limit,
+      }),
+    });
+
+    clearTimeout(stepTimer);
+    clearTimeout(stepTimer2);
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${response.status}`);
+    }
+
+    const blob     = await response.blob();
+    const videoUrl = URL.createObjectURL(blob);
+
+    // 영상 표시
+    document.getElementById('video-wrapper').innerHTML = `
+      <video src="${videoUrl}" controls autoplay playsinline
+             style="max-height:100%;max-width:100%;aspect-ratio:9/16;
+                    border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.25);background:#000;">
+      </video>`;
+
+    // 다운로드 카드
+    document.getElementById('archive-content').innerHTML = `
+      <div class="archive-card">
+        <span class="status-badge success">✅ 제작 완료</span>
+        <div class="archive-card-title">${escHtml(notice.title.substring(0,30))}${notice.title.length>30?'…':''}</div>
+        <a href="${videoUrl}" download="gongik_shorts.mp4" class="download-btn">📥 MP4 다운로드</a>
+      </div>`;
+
+    showToast('🎉 숏폼 제작 완료!');
+
+  } catch(e) {
+    document.getElementById('archive-content').innerHTML = `
+      <div class="archive-card">
+        <span class="status-badge error">❌ 제작 실패</span>
+        <div class="archive-card-title" style="color:var(--red);font-size:11px;">${escHtml(e.message)}</div>
+      </div>`;
+    showToast(`❌ 오류: ${e.message}`);
+    clearTimeout(stepTimer);
+    clearTimeout(stepTimer2);
+  } finally {
+    document.getElementById('loader').classList.remove('show');
+    document.getElementById('btn-submit').disabled = false;
+    isEncoding = false;
+  }
+}
+
+// ── 토스트 ───────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── 초기 로드 ─────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', loadRealTimeNotices);
+</script>
+</body>
+</html>
