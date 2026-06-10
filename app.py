@@ -500,5 +500,6 @@ def generate_shorts():
             except Exception: pass
 
 
-if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+if __name__ == '__main__':
+    # host를 '0.0.0.0'으로 설정해야 외부(스마트폰)에서 접속이 가능합니다.
+    app.run(host='0.0.0.0', port=5000)
